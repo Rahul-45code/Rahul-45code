@@ -1,0 +1,74 @@
+SMART PARKING
+PYTHON SCRIPT:
+import RPi.GPIO as GPIO
+import time
+import requests
+ 
+# Set the GPIO pins for Trigger and Echo
+TRIG_PIN = 17
+ECHO_PIN = 18
+ 
+# Set the server URL where you want to send data
+SERVER_URL = "http://yourserver.com/api/occupancy"
+ 
+# Initialize GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TRIG_PIN, GPIO.OUT)
+GPIO.setup(ECHO_PIN, GPIO.IN)
+ 
+def get_distance():
+    GPIO.output(TRIG_PIN, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG_PIN, False)
+ 
+    start_time = time.time()
+    stop_time = time.time()
+ 
+    while GPIO.input(ECHO_PIN) == 0:
+        start_time = time.time()
+ 
+    while GPIO.input(ECHO_PIN) == 1:
+        stop_time = time.time()
+ 
+    elapsed_time = stop_time - start_time
+    distance = (elapsed_time * 34300) / 2  # Speed of sound is 34300 cm/s
+    return distance
+ 
+try:
+    while True:
+        distance = get_distance()
+ 
+        # Define a threshold distance for parking space occupancy
+        threshold_distance = 30  # Adjust this value based on your setup
+ 
+        if distance < threshold_distance:
+            status = "Occupied"
+        else:
+            status = "Vacant"
+ 
+        data = {"status": status}
+ 
+        # Send the data to the server
+        response = requests.post(SERVER_URL, json=data)
+ 
+        print(f"Parking Status: {status}")
+        time.sleep(5)  # Update status every 5 seconds
+ 
+except KeyboardInterrupt:
+    GPIO.cleanup()
+
+LOCAL EXECUTION: 
+#include &lt;Ultrasonic.h&gt;
+Ultrasonic sensor1(GPIO_TRIGGER1, GPIO_ECHO1);
+Ultrasonic sensor2(GPIO_TRIGGER2, GPIO_ECHO2);
+// Add more sensors if needed
+void setup() {
+Serial.begin(115200);
+}
+void loop() {
+long distance1 = sensor1.read();
+long distance2 = sensor2.read();
+// Read distances from more sensors if needed
+// Process distance data and manage parking spaces here
+delay(1000); // Delay for better readabilit
+}
